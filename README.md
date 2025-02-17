@@ -27,10 +27,11 @@
 
 TODO:
 
-- [ ] Init repo
-- [ ] Start docs & roadmap 
-- [ ] `git` branching 
-- [ ] `sh` scripts for managing *libraries* and `esbuild`
+- [x] Init repo
+- [x] Start docs & roadmap 
+- [x] `git` branching 
+- [x] `sh` scripts for managing *libraries* and `esbuild`
+- [x] Modern composable components
 - [ ] Reimplement `standalone.js` , documenting Preact in the process 
 
 #### `esbuild`
@@ -49,6 +50,14 @@ https://bulma.io/documentation/start/installation/
 
 ## dev server & backend
 
+#### Python
+
+```
+python -m http.server 8000
+```
+
+> This frontend work lines up with previous and other work with I've done with Starlette and Django, so I often like to mock the backend with simple Python as mental placeholder.
+
 `esbuild` has a dev server option as well, including hot reload, but I don't really care about that. 
 
 ```
@@ -59,8 +68,6 @@ esbuild app.ts --bundle --outdir=dist --serve
 
 127.0.0.1:61302 - "GET /" 200 [1ms]
 ```
-
-This work is going to line up with other work in with GIN, Starlette and Django...
 
 #### notes
 

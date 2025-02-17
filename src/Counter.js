@@ -1,0 +1,33 @@
+import { h, render, useSignal, htm, useEffect, useRef, useState, useReducer  } from "../lib/standalone.js";
+
+
+const html = htm.bind(h);
+ 
+let initialState = 1;
+const reducer = (state, action) => {
+  switch (action) {
+    case 'increment': return state + 1;
+    case 'decrement': return state - 1;
+    case 'reset': return 0;
+    default: throw new Error('Unexpected action');
+  }
+};
+
+function Counter(props) {
+  // Returns the current state and a dispatch function to
+  // trigger an action
+  const [count, dispatch] = useReducer(reducer, props.state || initialState)
+  return (
+    html`<div>
+    <h2>COUNTER</h2>
+    <h2>${count}</h2>
+     <div class="button-group right">
+      <button class="button" onClick=${() => dispatch('increment')}>+1</button>
+      <button class="button" onClick=${() => dispatch('decrement')}>-1</button>
+      <button class="button" onClick=${() => dispatch('reset')}>reset</button>
+    </div>
+      </div>`
+  );
+}
+
+export default Counter;
