@@ -19,9 +19,8 @@ function Counter(props) {
   const [count, dispatch] = useReducer(reducer, props.state || initialState)
   return (
     html`<div>
-    <h2>COUNTER</h2>
-    <h2>${count}</h2>
-     <div class="button-group right">
+    <h2><pre>${count}</pre></h2> 
+     <div class="button-group right" style="margin-top: 2em;">
       <button class="button" onClick=${() => dispatch('increment')}>+1</button>
       <button class="button" onClick=${() => dispatch('decrement')}>-1</button>
       <button class="button" onClick=${() => dispatch('reset')}>reset</button>

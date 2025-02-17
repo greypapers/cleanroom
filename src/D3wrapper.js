@@ -10,11 +10,13 @@ const D3Wrapper = (props) => {
   
   useEffect(() => {
     const svg = select(svgRef.current)
-      .attr("width", 500)
+      .attr("width", "100%")
       .attr("height", 200)
-      .style("border", "1px solid black");
+    .attr('viewBox', '0 0 400 200')
+    .attr('preserveAspectRatio', 'xMinYMin meet')
+      // .style("border", "1px solid black");
 
-    const data = [100, 20, 80, 70, 50];
+    const data = [20, 80, 70, 50];
 
     svg.selectAll("rect")
       .data(data)
@@ -22,14 +24,14 @@ const D3Wrapper = (props) => {
       .append("rect")
       .attr("x", (d, i) => i * 100)
       .attr("y", (d) => 200 - d)
-      .attr("width", 80)
+      .attr("width", 60)
       .attr("height", (d) => d)
       .attr("fill", "grey");
   }, []); // note: empty dependency array ensures this effect runs only once on mount
 
   return html`
     <div>
-      <h2>D3.js</h2>
+      <h2 class="subtitle"><pre>D3.js</pre></h2>
       <svg ref=${svgRef}></svg>
     </div>
   `;

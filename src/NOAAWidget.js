@@ -92,21 +92,20 @@ const NOAAWidget = (props) => {
   }, [weatherData]);
   let content;
   if (weatherData) {
-    content = html`<div className="box" style="max-width: 300px;">
+    content = html` <center><div className="box" style="max-width:350px;">
       <div style="margin: .5em;" />
-      <h4 className="small-caps">${props.title} </h4>
+	  <h4>${props.title} </h4>
       <div ref=${imgRef}></div>
       <h3>${weatherData.forecast.temperature}°</h3>
       <pre>${weatherData.city}</pre>
       <pre>${weatherData.forecast.shortForecast}</pre>
-      
-      
-    </div>`;
+    </div>
+	    </center>`;
   } else {
-    content = html`<div className="box" style="max-height:150px">  
-      <img class="loading" src="/static/loading.gif"/>
+    content = html`<center><div className="box" style="max-width:350px;">  
+      <img class="loading" src="loading.gif"/>
 
-    </div>`;
+    </div></center>`;
   }
   return content;
 };
