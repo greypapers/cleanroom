@@ -297,7 +297,6 @@ const BaseComponent = (props) => {
   laoreet. Sed nec eleifend justo. Nam et sollicitudin odio.
 </p>
 <figure>
- 
   <img src="https://bulma.io/assets/images/placeholders/256x256.png" />
   <figcaption>Figure 1: Some beautiful placeholders</figcaption>
 </figure>
@@ -307,12 +306,9 @@ const BaseComponent = (props) => {
   <div class="content">
   <h1 class="subtitle">7: Heat Equation</h1>
   <${MathJaxWrapper} expression=${HEAT_EQUATION} />
-  
   </div>
   </div>
   <div class="column">
- 
-
    <${NOAAWidget}/>
   </div>
 </div>

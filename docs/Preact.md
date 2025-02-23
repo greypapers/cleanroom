@@ -1,14 +1,11 @@
 # Preact
 
-
-
-Notes about ongoing RE work will go here as well as links to documentation. 
+Notes about ongoing RE work will go here as well as links to documentation.
 
 ## functions
 
 ### render
 
-### create-context 
+### create-context
 
-### create element 
-
+### create element

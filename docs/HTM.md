@@ -1,6 +1,7 @@
 ### HTM
 
+#### `treeify`
+
 #### `build`
 
 #### `evaluate`
-

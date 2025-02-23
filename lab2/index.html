@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Use the correct module version for preact -->
+    <script type="module">
+      import {
+        h,
+        render,
+      } from "https://unpkg.com/preact@10.11.0/dist/preact.mjs";
+      import htm from "https://esm.sh/htm@3.1.0";
+
+      const html = htm.bind(h);
+
+      const App = () => html`<div>CLEANROOM</div>`;
+
+      render(html`<${App} />`, document.getElementById("app"));
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+</html>
