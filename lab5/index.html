@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vanilla HTM Example</title>
+    <script src="https://unpkg.com/htm@3.1.0/dist/htm.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script>
+// Cursor's help here creating and observer pattern 
+// Basic Signal implementation
+class Signal {
+  constructor(initialValue) {
+    this._value = initialValue;
+    this._subscribers = new Set();
+  }
+
+  get value() {
+    return this._value;
+  }
+
+  set value(newValue) {
+    this._value = newValue;
+    this._subscribers.forEach(callback => callback(newValue));
+  }
+
+  subscribe(callback) {
+    this._subscribers.add(callback);
+    return () => this._subscribers.delete(callback);
+  }
+}
+
+// Modified h function to handle signals
+function h(tag, props, ...children) {
+  const element = document.createElement(tag);
+
+  if (props) {
+    Object.keys(props).forEach((key) => {
+      const value = props[key];
+      
+      if (value instanceof Signal) {
+        // Handle signal props
+        const updateProp = (newValue) => {
+          if (key === "className") {
+            element.className = newValue;
+          } else {
+            element.setAttribute(key, newValue);
+          }
+        };
+        updateProp(value.value);
+        value.subscribe(updateProp);
+      } else if (key.startsWith("on") && typeof value === "function") {
+        element.addEventListener(key.slice(2).toLowerCase(), value);
+      } else if (key === "className") {
+        element.classList.add(value);
+      } else {
+        element.setAttribute(key, value);
+      }
+    });
+  }
+
+  children.forEach((child) => {
+    if (child instanceof Signal) {
+      // Handle signal children
+      const textNode = document.createTextNode(child.value);
+      child.subscribe(newValue => textNode.textContent = newValue);
+      element.appendChild(textNode);
+    } else if (typeof child === "string") {
+      element.appendChild(document.createTextNode(child));
+    } else {
+      element.appendChild(child);
+    }
+  });
+
+  return element;
+}
+
+// Example usage with signals
+const count = new Signal(0);
+const ButtonComponent = (props) => {
+  return html`
+    <div>
+      <h2>${props.title}</h2>
+      <p>Count: ${count}</p>
+      <button onClick=${() => count.value++}>Increment</button>
+    </div>
+  `;
+};
+
+      // Define HTM tag function
+      const html = window.htm.bind(h); // Using `h` to create elements
+
+      // Define a component using HTM
+      const Component = (props) => {
+        return html`<div>
+          <h2>${props.title}</h2>
+          <p>${props.content}</p>
+          ${ButtonComponent({title: "Increment", onClick: () => count.value++})}
+        </div>`;
+      };
+
+      // Create the App component using HTM
+      const App = () => {
+        return html`
+          <div style="font-family:monospace;">
+            <h1>CLEANROOM.JS</h1>
+            <hr />
+            ${Component({
+              title: "Hello, World!",
+              content:
+                "This is a simple example of using HTM with vanilla JavaScript.",
+            })}
+          </div>
+        `;
+      };
+
+      // Render the component inside 'root' div
+      document.getElementById("root").appendChild(App());
+    </script>
+  </body>
+</html>

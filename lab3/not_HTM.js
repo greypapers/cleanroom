@@ -14,7 +14,12 @@
 
         // Minimal HTM implementation
        export function html(strings, ...values) {
+		   
+		        console.log('ok:', strings, values)
+		   
             // For now, just demonstrate it works
-            return h("div", null, "Hello");
+            return h("div", null, 'hello');
           }
+
+   
       
