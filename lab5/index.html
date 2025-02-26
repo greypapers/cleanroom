@@ -10,6 +10,8 @@
     <div id="root"></div>
 
     <script>
+
+
 // Cursor's help here creating and observer pattern 
 // Basic Signal implementation
 class Signal {
@@ -62,6 +64,7 @@ function h(tag, props, ...children) {
     });
   }
 
+
   children.forEach((child) => {
     if (child instanceof Signal) {
       // Handle signal children
@@ -102,7 +105,7 @@ const ButtonComponent = (props) => {
         </div>`;
       };
 
-      // Create the App component using HTM
+      
       const App = () => {
         return html`
           <div style="font-family:monospace;">

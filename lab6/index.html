@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HTM Toy Reimplementation</title>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- Import Preact from CDN -->
+  <script src="https://unpkg.com/preact@10.23.2/dist/preact.min.js"></script>
+  
+  <script>
+    const { h, render } = window.preact;
+
+    // Our toy HTM implementation
+    const htm = {
+      // Parse template literal into type, props, and children
+      regular(strings, ...values) {
+        let str = strings.reduce((acc, part, i) => acc + values[i - 1] + part);
+        console.log("Raw string:", str);
+        
+        const match = str.match(/<(\w+)([^>]*)>(.*?)<\/\1>/) || [];
+        const [, tag, attrs, children] = match;
+        
+        const props = {};
+        if (attrs) {
+          attrs.match(/(\w+)="([^"]*)"/g)?.forEach(attr => {
+            const [key, val] = attr.split('="');
+            props[key] = val.slice(0, -1);
+          });
+        }
+        
+        return { type: tag, props, children: [children] };
+      },
+
+      // Convert parsed data into a VDOM tree
+      treeify({ type, props, children }) {
+        console.log("Treeifying:", { type, props, children });
+        return { type, props, children: children.map(child => 
+          typeof child === 'string' ? child : this.treeify(child)
+        ) };
+      },
+
+      // Build VDOM nodes using Preact's h()
+      build({ type, props, children }) {
+        console.log("Building:", { type, props, children });
+        return h(type, props, children.map(child => 
+          typeof child === 'object' ? this.build(child) : child
+        ));
+      },
+
+      // Evaluate components (simple pass-through for now)
+      evaluate(node) {
+        console.log("Evaluating:", node);
+        return this.build(node);
+      },
+
+      // Main entry point
+      bind(h) {
+        return (strings, ...values) => {
+          const parsed = this.regular(strings, ...values);
+          const tree = this.treeify(parsed);
+          return this.evaluate(tree);
+        };
+      }
+    };
+
+    // Create our "html" tagged template function
+    const html = htm.bind(h);
+
+    // Example usage
+    const name = "World";
+    const vdom = html`<div class="greeting">Hello, ${name}!</div>`;
+    console.log("Final VDOM:", vdom);
+
+    // Render to the DOM
+    render(vdom, document.getElementById("root"));
+  </script>
+</body>
+</html>
