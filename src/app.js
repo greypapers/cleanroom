@@ -3,6 +3,8 @@ import { h, render, useSignal, useEffect, htm } from "../lib/standalone.js";
 import D3Wrapper from './D3wrapper.js'
 import Counter  from "./Counter.js";
 import NOAAWidget from "./NOAAWidget.js"
+import Map from "./Map.js"
+
 const html = htm.bind(h);
 
 const HEAT_EQUATION = "\\frac{\\partial u}{\\partial t} = \\alpha \\frac{\\partial^2 u}{\\partial x^2}"
@@ -260,7 +262,12 @@ const BaseComponent = (props) => {
 	
   console.log(props.data);
   return html`<header class="header"><h1 class="title"><pre>CLEANROOM.JS</pre></h1></header><div class="container">
-
+<${Map}
+        lat=${38.505}
+        lng=${-96.09}
+        zoom=${3}
+        msg=${"you are here"}
+      />
 <div class="columns">
   <div class="column">
    <${D3Wrapper}/>
