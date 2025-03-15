@@ -315,42 +315,107 @@ const P = (() => {
     return context;
   }
 
+
+  // Hooks implementation
+  let currentComponent = null;
+  const states = new WeakMap();
+  let stateIndex = 0;
+
+  function useState(initialValue) {
+    const component = currentComponent;
+    if (!states.has(component)) {
+      states.set(component, []);
+    }
+    const componentStates = states.get(component);
+    const index = stateIndex++;
+
+    if (componentStates[index] === undefined) {
+      componentStates[index] = [initialValue, (newValue) => {
+        componentStates[index][0] = typeof newValue === 'function' ? newValue(componentStates[index][0]) : newValue;
+        component._dirty = true;
+        options._enqueueRender(component);
+      }];
+    }
+
+    return componentStates[index];
+  }
+
+  // function renderComponent(component) {
+  //   if (!component) return null;
+  //   if (!components.has(component)) {
+  //     components.set(component, { vnode: null, dom: null, component });
+  //   }
+    
+  //   const data = components.get(component);
+  //   if (component._pendingState) {
+  //     component.state = component._pendingState;
+  //     component._pendingState = null;
+  //   }
+    
+  //   component._dirty = false;
+  //   const newVNode = component.render();
+  //   const newDom = renderToDom(newVNode);
+    
+  //   if (data.dom && data.dom.parentNode) {
+  //     data.dom.parentNode.replaceChild(newDom, data.dom);
+  //   }
+    
+  //   data.vnode = newVNode;
+  //   data.dom = newDom;
+  //   return newDom;
+  // }
+
+  // Functional component wrapper
+  FC = (fn) => {
+    return class extends BaseComponent {
+      render() {
+        currentComponent = this; // Set for hooks
+        stateIndex = 0; // Reset hook index
+        const result = fn(this.props);
+        currentComponent = null; // Clear after rendering
+        return result;
+      }
+    };
+  };
+
+  // Ensure renderComponent works with hooks
   function renderComponent(component) {
     if (!component) return null;
     if (!components.has(component)) {
       components.set(component, { vnode: null, dom: null, component });
     }
-    
+  
     const data = components.get(component);
     if (component._pendingState) {
       component.state = component._pendingState;
       component._pendingState = null;
     }
-    
+  
     component._dirty = false;
     const newVNode = component.render();
     const newDom = renderToDom(newVNode);
-    
+  
     if (data.dom && data.dom.parentNode) {
       data.dom.parentNode.replaceChild(newDom, data.dom);
     }
-    
+  
     data.vnode = newVNode;
     data.dom = newDom;
     return newDom;
   }
 
+ 
   function renderToDom(vnode) {
     // Handle null/undefined/boolean
     if (vnode == null || typeof vnode === "boolean") {
       return document.createTextNode("");
     }
-  
+
     // Handle text nodes
     if (typeof vnode === "string" || typeof vnode === "number") {
       return document.createTextNode(vnode);
     }
-  
+
     // Handle arrays (e.g., multiple root nodes or fragments)
     if (Array.isArray(vnode)) {
       const fragment = document.createDocumentFragment();
@@ -360,37 +425,41 @@ const P = (() => {
       });
       return fragment;
     }
-  
+
     // Handle components (functional or class)
     if (typeof vnode.type === "function") {
+      // Ensure props is always an object
+      const props = vnode.props || {};
+    
       // Class component
       if (vnode.type.prototype instanceof BaseComponent) {
-        const component = new vnode.type(vnode.props);
+        const component = new vnode.type(props);
         components.set(component, { vnode, dom: null, component });
         return renderComponent(component);
       } 
       // Functional component
-      const renderedVNode = vnode.type(vnode.props || {});
+      const renderedVNode = vnode.type(props);
       return renderToDom(renderedVNode);
     }
-  
+
     // Handle regular DOM elements
     const dom = vnode.type === "svg" 
       ? document.createElementNS("http://www.w3.org/2000/svg", vnode.type)
       : document.createElement(vnode.type);
-  
-    setAttributes(dom, vnode.props);
-    toChildArray(vnode.props.children).forEach(child => {
+
+    setAttributes(dom, vnode.props || {}); // Ensure props is defined here too
+    toChildArray(vnode.props ? vnode.props.children : []).forEach(child => {
       const childDom = renderToDom(child);
       if (childDom) dom.appendChild(childDom);
     });
-  
+
     if (vnode.ref) {
       typeof vnode.ref === "function" ? vnode.ref(dom) : (vnode.ref.current = dom);
     }
-  
+
     return dom;
   }
+ 
 
   function setAttributes(dom, props) {
     if (!props) return;
@@ -439,6 +508,7 @@ const P = (() => {
     return dom;
   }
 
+
   const hydrate = (vnode, container) => render(vnode, container);
 
   return {
@@ -454,5 +524,7 @@ const P = (() => {
     cloneElement,
     createContext,
     toChildArray,
+	useState,
+	FC
   };
 })();
