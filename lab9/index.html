@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CLEANROOM.JS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:ital,wght@0,200..800;1,200..800&family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&family=Cardo:ital,wght@0,400;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css"
+    />
+    <link rel="stylesheet" href="../dist/style.css" />
+    <link rel="stylesheet" href="../lib/leaflet.css" />
+    <script
+      defer
+      src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"
+    ></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="cleanroom.js"></script>
+    <script>
+      // Bind build to Preact.h
+      const htm = build.bind(P.h);
+      /*
+            const Button = ({ label }) => {
+              const notState = 0;
+              const increment = () => {
+                notState++;
+                console.log("Button clicked", notState);
+              };
+
+              return htm`
+              <p>${notState}</p>
+            <button style=${{ padding: "10px" }}>${label}</button>
+          `;
+            };
+      */
+
+      class Button extends P.Component {
+        constructor(props) {
+          super(props);
+          this.state = { count: 0 }; // Initial state
+        }
+
+        increment = () => {
+          this.setState({ count: this.state.count + 1 }, () => {
+            console.log("Button clicked", this.state.count);
+          });
+        };
+
+        render() {
+          return htm`
+              <div>
+                <p style="font-family:monospace;">${this.state.count}</p>
+                <button class="button" onClick=${this.increment} style="font-family: 'Atkinson Hyperledgible Next', monospace;font-size:10pt;">
+                  ${this.props.label}
+                </button>
+              </div>
+            `;
+        }
+      }
+
+      function App() {
+        return htm`
+                <div class="container">
+                  <div class="content">
+                  <h1 style="font-family: monospace;">CLEANROOM.JS</h1>
+                  <hr/>
+                  <${Button} label="click me"/>
+                  </div>
+                </div>
+              `;
+      }
+
+      P.render(P.h(App), document.getElementById("root"));
+    </script>
+  </body>
+</html>

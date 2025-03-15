@@ -53,6 +53,10 @@
       // Evaluate components (simple pass-through for now)
       evaluate(node) {
         console.log("Evaluating:", node);
+        // If type is a function (component), call it with props and children
+        if (typeof node.type === 'function') {
+          return node.type({ ...node.props, children: node.children });
+        }
         return this.build(node);
       },
 
@@ -70,10 +74,10 @@
     const html = htm.bind(h);
 
     // Example usage
-    const name = "World";
+    const name = "CLEANROOM";
     const vdom = html`<div class="greeting">Hello, ${name}!</div>`;
     console.log("Final VDOM:", vdom);
-
+    
     // Render to the DOM
     render(vdom, document.getElementById("root"));
   </script>

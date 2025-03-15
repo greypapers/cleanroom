@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toy HTM with Signals</title>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+	  
+	  // Basic Signal implementation
+	  class Signal {
+	    constructor(initialValue) {
+	      this._value = initialValue;
+	      this._subscribers = new Set();
+	    }
+
+	    get value() {
+	      return this._value;
+	    }
+
+	    set value(newValue) {
+	      this._value = newValue;
+	      this._subscribers.forEach(callback => callback(newValue));
+	    }
+
+	    subscribe(callback) {
+	      this._subscribers.add(callback);
+	      return () => this._subscribers.delete(callback);
+	    }
+	  }
+	  
+	  
+	  // Modified h function to handle signals
+	  function h(tag, props, ...children) {
+	    const element = document.createElement(tag);
+
+	    if (props) {
+	      Object.keys(props).forEach((key) => {
+	        const value = props[key];
+      
+	        if (value instanceof Signal) {
+	          // Handle signal props
+	          const updateProp = (newValue) => {
+	            if (key === "className") {
+	              element.className = newValue;
+	            } else {
+	              element.setAttribute(key, newValue);
+	            }
+	          };
+	          updateProp(value.value);
+	          value.subscribe(updateProp);
+	        } else if (key.startsWith("on") && typeof value === "function") {
+	          element.addEventListener(key.slice(2).toLowerCase(), value);
+	        } else if (key === "className") {
+	          element.classList.add(value);
+	        } else {
+	          element.setAttribute(key, value);
+	        }
+	      });
+	    }
+
+
+	    children.forEach((child) => {
+	      if (child instanceof Signal) {
+	        // Handle signal children
+	        const textNode = document.createTextNode(child.value);
+	        child.subscribe(newValue => textNode.textContent = newValue);
+	        element.appendChild(textNode);
+	      } else if (typeof child === "string") {
+	        element.appendChild(document.createTextNode(child));
+	      } else {
+	        element.appendChild(child);
+	      }
+	    });
+
+	    return element;
+	  }
+	  
+	  // Render function to mount or update the virtual DOM tree
+	  function render(vnode, container) {
+	    // If container is empty, just append the vnode
+	    if (container.firstChild === null) {
+	      container.appendChild(vnode);
+	    } else {
+	      // If there's already content in the container, we need to diff and update
+	      updateDOM(container.firstChild, vnode);
+	    }
+	  }
+
+	  // Update the DOM by diffing virtual nodes
+	  function updateDOM(oldNode, newNode) {
+	    // If the node is the same, do nothing
+	    if (oldNode.isEqualNode(newNode)) return;
+
+	    // If the nodes are different, replace the old node with the new one
+	    if (oldNode.nodeName !== newNode.nodeName) {
+	      oldNode.replaceWith(newNode);
+	    } else {
+	      // Update the attributes and children
+	      updateAttributes(oldNode, newNode);
+	      updateChildren(oldNode, newNode);
+	    }
+	  }
+
+	  // Update attributes for the DOM node
+	  function updateAttributes(oldNode, newNode) {
+	    const oldProps = oldNode.attributes;
+	    const newProps = newNode.attributes;
+
+	    // Remove old attributes
+	    Array.from(oldProps).forEach(attr => oldNode.removeAttribute(attr.name));
+
+	    // Set new attributes
+	    Array.from(newProps).forEach(attr => {
+	      oldNode.setAttribute(attr.name, attr.value);
+	    });
+	  }
+
+	  // Update children for the DOM node
+	  function updateChildren(oldNode, newNode) {
+	    const oldChildren = oldNode.childNodes;
+	    const newChildren = newNode.childNodes;
+
+	    // Remove all old children
+	    while (oldChildren.length > 0) {
+	      oldNode.removeChild(oldChildren[0]);
+	    }
+
+	    // Append new children
+	    newChildren.forEach(child => {
+	      oldNode.appendChild(child);
+	    });
+	  }
+	  
+	  // Constants for tag types
+	  const TAG_SET = 3;
+	  const PROP_SET = 5;
+	  const PROP_APPEND = 6;
+	  const CHILD_RECURSE = 7;
+	  const CHILD_APPEND = 8;
+
+	  // Debugging helper
+	  function log(message, data) {
+	    console.log(message, data);
+	    const debugOutput = document.getElementById('debug-output');
+	    const entry = document.createElement('div');
+	    entry.innerHTML = `<strong>${message}</strong>: ${JSON.stringify(data)}`;
+	    debugOutput.appendChild(entry);
+	  }
+
+	  // Parse tag and extract properties
+	  function parseTag(fullTag) {
+	    const parts = fullTag.split(/\s+/);
+	    const tag = parts[0];
+	    const props = {};
+  
+	    for (let i = 1; i < parts.length; i++) {
+	      const attrPart = parts[i];
+	      const eqPos = attrPart.indexOf('=');
+    
+	      if (eqPos === -1) {
+	        props[attrPart] = true;
+	      } else {
+	        const name = attrPart.slice(0, eqPos);
+	        let value = attrPart.slice(eqPos + 1);
+      
+	        if ((value.startsWith('"') && value.endsWith('"')) || 
+	            (value.startsWith("'") && value.endsWith("'"))) {
+	          value = value.slice(1, -1);
+	        }
+      
+	        props[name] = value;
+	      }
+	    }
+  
+	    return { tag, props };
+	  }
+
+	  // HTM structure creation (treeify)
+	  const treeify = (built, fields) => {
+	    const _treeify = built => {
+	      let fullTagInfo = null;
+	      let props = {};
+	      const children = [];
+    
+	      for (let i = 1; i < built.length; i++) {
+	        const type = built[i++];
+	        const valueIndex = built[i];
+	        const value = valueIndex > 0 ? fields[valueIndex - 1] : built[++i];
+      
+	        if (type === TAG_SET) {
+	          fullTagInfo = parseTag(value);
+	        } else if (type === PROP_SET) {
+	          const propName = built[++i];
+	          props[propName] = value;
+	        } else if (type === PROP_APPEND) {
+	          const propName = built[++i];
+	          props[propName] += value;
+	        } else if (type === CHILD_RECURSE) {
+	          children.push(_treeify(value));
+	        } else if (type === CHILD_APPEND) {
+	          if (value !== '') {
+	            children.push(value);
+	          }
+	        }
+	      }
+    
+	      const tag = fullTagInfo ? fullTagInfo.tag : '';
+	      const combinedProps = { ...fullTagInfo?.props, ...props };
+	      return h(tag, combinedProps, ...children);
+	    };
+  
+	    return _treeify(built);
+	  };
+
+	  // Build function for HTM tag parsing
+	  const build = function(statics) {
+	    const fields = Array.from(arguments).slice(1);
+	    let mode = 0;
+	    let buffer = '';
+	    let current = [0];
+	    let propName;
+
+	    const commit = field => {
+	      if (mode === 0 && (field !== undefined || (buffer = buffer.replace(/^\s*\n\s*|\s*\n\s*$/g, '')))) {
+	        if (buffer) {
+	          current.push(CHILD_APPEND, 0, buffer);
+	        }
+	        if (field !== undefined) {
+	          current.push(CHILD_APPEND, field + 1, '');
+	        }
+	      } else if (mode === 1) {
+	        if (buffer && !buffer.startsWith('/')) {
+	          current.push(TAG_SET, 0, buffer);
+	        }
+	        mode = 0;
+	      }
+
+	      buffer = '';
+	    };
+
+	    for (let i = 0; i < statics.length; i++) {
+	      if (i > 0) {
+	        if (mode === 0) {
+	          commit();
+	        }
+	        commit(i - 1);
+	      }
+
+	      for (let j = 0; j < statics[i].length; j++) {
+	        const char = statics[i][j];
+
+	        if (mode === 0) {
+	          if (char === '<') {
+	            commit();
+	            buffer = '';  // Clear buffer for tag name
+	            mode = 1;  // Tag mode
+	          } else {
+	            buffer += char;
+	          }
+	        } else if (mode === 1 && char === '>') {
+	          commit();  // Process tag
+	        } else {
+	          buffer += char;
+	        }
+	      }
+	    }
+	    commit();
+
+	    return current;
+	  };
+
+	  // Example usage with HTM and a simple "Signal"-like approach
+	  let message = 'Hello, HTM with Signals!';
+
+	  // Simulating Signal-like behavior using a simple function
+	  function createSignal(initialValue) {
+	    let value = initialValue;
+	    const listeners = [];
+
+	    function set(newValue) {
+	      if (newValue !== value) {
+	        value = newValue;
+	        listeners.forEach(listener => listener(value));
+	      }
+	    }
+
+	    function get() {
+	      return value;
+	    }
+
+	    function subscribe(listener) {
+	      listeners.push(listener);
+	    }
+
+	    return { set, get, subscribe };
+	  }
+
+	  // Create a "signal" for our message
+	  const messageSignal = createSignal(message);
+
+	  // Update the message after 2 seconds, simulating reactive state change
+	  setTimeout(() => {
+	    messageSignal.set('HTM with dynamic Signal update!');
+	  }, 2000);
+
+	  // Use treeify to render the dynamic content based on messageSignal
+	  setInterval(() => {
+	    const built = build`<div class="container">
+		  <h1>${messageSignal.get()}</h1>
+		  <p>${messageSignal.get()}</p></div>`;
+	   
+	    const element = treeify(built, [messageSignal.get()]);
+	    render(element, document.getElementById('root'));
+	  }, 100);
+
+	  // HTML
+	  document.body.innerHTML = `
+	    <div id="root"></div>
+	    <div id="debug-output"></div>
+	  `;
+
+/*
+	  
+Let me break down what you've built:
+
+A Signal class that:
+
+Stores a value
+Notifies subscribers when the value changes
+Provides subscription management
+
+
+An enhanced h (hyperscript) function that:
+
+Creates DOM elements
+Handles Signal-based properties reactively
+Updates the DOM automatically when Signal values change
+
+
+DOM diffing utilities:
+
+render, updateDOM, updateAttributes, and updateChildren for efficient updates
+Compares old and new nodes to minimize DOM operations
+
+
+HTM parsing logic:
+
+Constants for different tag and property operations
+parseTag, treeify, and build functions to process tagged template literals
+Conversion from string templates to virtual DOM nodes
+
+
+A simple example that:
+
+Creates a signal for a message
+Updates it after 2 seconds
+Re-renders periodically to reflect changes 
+	  */
+
+  </script>
+</body>
+</html>

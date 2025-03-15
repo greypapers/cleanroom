@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Mini Preact Example</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="cleanroom.js"></script>
+    <script>
+      // Bind build to Preact.h
+      const htm = build.bind(P.h);
+      /*
+      const Button = ({ label }) => {
+        const notState = 0;
+        const increment = () => {
+          notState++;
+          console.log("Button clicked", notState);
+        };
+
+        return htm`
+        <p>${notState}</p>
+      <button style=${{ padding: "10px" }}>${label}</button>
+    `;
+      };
+*/
+
+      class Button extends P.Component {
+        constructor(props) {
+          super(props);
+          this.state = { count: 0 }; // Initial state
+        }
+
+        increment = () => {
+          this.setState({ count: this.state.count + 1 }, () => {
+            console.log("Button clicked", this.state.count);
+          });
+        };
+
+        render() {
+          return htm`
+        <div>
+          <p>${this.state.count}</p>
+          <button onClick=${this.increment} style=${{ padding: "10px" }}>
+            ${this.props.label}
+          </button>
+        </div>
+      `;
+        }
+      }
+
+      function App() {
+        return htm`
+          <div>
+            <h1 style=${{ color: "#000" }}>Hello World</h1>
+            <p>This is a test</p>
+            <${Button} label="click me"/>
+          </div>
+        `;
+      }
+
+      P.render(P.h(App), document.getElementById("root"));
+    </script>
+  </body>
+</html>

@@ -73,9 +73,6 @@ const SignalReciever = (props) => {
 	return html`<div><h2 class="title">0</h2></div>`
 }
 
-
-
-
 const BookContent = (props) => {
 	return html`
   <div class="content">
@@ -342,8 +339,7 @@ const BaseComponent = (props) => {
 </footer>
 </div>`}
 
-//  
 
-//
+
 
 render(html`<${BaseComponent} />`, document.getElementById("app"));

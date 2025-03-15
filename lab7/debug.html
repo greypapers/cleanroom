@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toy HTM with Signals</title>
+  <script src="https://unpkg.com/preact@10.23.2/dist/preact.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <div id="htm-output"></div>
+  <div id="debug-output" style="font-family:monospace;margin-top: 20px; padding: 10px; border: 1px solid #ccc; background: #f5f5f5;"></div>
+  <script>
+	 //https://claude.ai/chat/220f075c-7731-4bde-bf8b-417592a4d910 
+	  
+    const { h, render } = window.preact;
+    
+    // Define all constants
+    const TAG_SET = 3;
+    const PROP_SET = 5;
+    const PROP_APPEND = 6;
+    const CHILD_RECURSE = 7;
+    const CHILD_APPEND = 8;
+    
+    // Debug output helper
+    function log(message, data) {
+      console.log(message, data);
+      const debugOutput = document.getElementById('debug-output');
+      const entry = document.createElement('div');
+      entry.innerHTML = `<strong>${message}</strong>: ${JSON.stringify(data)}`;
+      debugOutput.appendChild(entry);
+    }
+    
+    // Parse tag and extract properties
+    function parseTag(fullTag) {
+      const parts = fullTag.split(/\s+/);
+      const tag = parts[0];
+      const props = {};
+      
+      // Process attributes
+      for (let i = 1; i < parts.length; i++) {
+        const attrPart = parts[i];
+        const eqPos = attrPart.indexOf('=');
+        
+        if (eqPos === -1) {
+          // Boolean attribute
+          props[attrPart] = true;
+        } else {
+          // Name=value attribute
+          const name = attrPart.slice(0, eqPos);
+          let value = attrPart.slice(eqPos + 1);
+          
+          // Remove quotes if present
+          if ((value.startsWith('"') && value.endsWith('"')) || 
+              (value.startsWith("'") && value.endsWith("'"))) {
+            value = value.slice(1, -1);
+          }
+          
+          props[name] = value;
+        }
+      }
+      
+      log("Parsed tag", { tag, props });
+      return { tag, props };
+    }
+    
+    const treeify = (built, fields) => {
+      const _treeify = built => {
+        log("Processing built structure", built);
+        
+        // The actual tag is the first piece of real data
+        let fullTagInfo = null;
+        let props = {};
+        const children = [];
+        
+        for (let i = 1; i < built.length; i++) {
+          const type = built[i++];
+          const valueIndex = built[i];
+          
+          const value = valueIndex > 0 ? fields[valueIndex-1] : built[++i];
+          
+          if (type === TAG_SET) {
+            // Parse the full tag string to extract tag name and properties
+            fullTagInfo = parseTag(value);
+          } else if (type === PROP_SET) {
+            const propName = built[++i];
+            props[propName] = value;
+          } else if (type === PROP_APPEND) {
+            const propName = built[++i];
+            props[propName] += value;
+          } else if (type === CHILD_RECURSE) {
+            children.push(_treeify(value));
+          } else if (type === CHILD_APPEND) {
+            if (value !== '') {
+              children.push(value);
+            }
+          }
+        }
+        
+        // Use the parsed tag info if available
+        const tag = fullTagInfo ? fullTagInfo.tag : '';
+        const combinedProps = { ...fullTagInfo?.props, ...props };
+        
+        log(`Creating element with tag: "${tag}"`, { props: combinedProps, childCount: children.length });
+        
+        return h(tag, combinedProps, ...children);
+      };
+      
+      return _treeify(built);
+    };
+    
+    const build = function(statics) {
+      const fields = Array.from(arguments).slice(1);
+      
+      let mode = 0;
+      let buffer = '';
+      let current = [0];
+      let propName;
+      
+      const commit = field => {
+        if (mode === 0 && (field !== undefined || (buffer = buffer.replace(/^\s*\n\s*|\s*\n\s*$/g, '')))) {
+          if (buffer) {
+            current.push(CHILD_APPEND, 0, buffer);
+          }
+          if (field !== undefined) {
+            current.push(CHILD_APPEND, field + 1, '');
+          }
+        } else if (mode === 1) {
+          // Tag mode - buffer contains the tag and possibly attributes
+          if (buffer && !buffer.startsWith('/')) {
+            current.push(TAG_SET, 0, buffer);
+          }
+          mode = 0;
+        }
+        
+        buffer = '';
+      };
+      
+      for (let i = 0; i < statics.length; i++) {
+        if (i > 0) {
+          if (mode === 0) {
+            commit();
+          }
+          commit(i - 1);
+        }
+        
+        for (let j = 0; j < statics[i].length; j++) {
+          const char = statics[i][j];
+          
+          if (mode === 0) {
+            if (char === '<') {
+              commit();
+              buffer = '';  // Clear buffer for tag name
+              mode = 1;  // Tag mode
+            } else {
+              buffer += char;
+            }
+          } else if (mode === 1 && char === '>') {
+            commit();  // Process tag
+          } else {
+            buffer += char;
+          }
+        }
+      }
+      commit();
+      
+      return current;
+    };
+    
+    // Simple example
+    const message = 'Hello, Custom HTM!';
+    
+    // Create and render element
+    const vnode = h('div', { class: 'container' }, [
+      h('h1', null, 'Direct Preact Render'),
+      h('p', null, message)
+    ]);
+    render(vnode, document.getElementById('root'));
+    
+    // After rendering the simple example, try the custom implementation
+    setTimeout(() => {
+      try {
+        log('Starting HTM parsing', {});
+        
+        // Simpler test case
+        const built = build`<div class="test">${message}</div>`;
+        log('Built structure', built);
+        
+        const element = treeify(built, [message]);
+        log('Preact element', element);
+        
+        // Render to a different container
+        render(element, document.getElementById('htm-output'));
+        log('Rendered successfully!', {});
+      } catch (error) {
+        console.error('Error:', error);
+        log('Error', { message: error.message });
+        
+        // Fallback
+        render(
+          h('div', { class: 'error-container' }, [
+            h('h1', null, 'Custom HTM Implementation Error'),
+            h('p', null, message),
+            h('p', null, `Error: ${error.message}`)
+          ]),
+          document.getElementById('htm-output')
+        );
+      }
+    }, 1000);
+  </script>
+</body>
+</html>

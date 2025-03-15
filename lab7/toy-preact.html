@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Toy Preact</title>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <!-- Include the Preact implementation -->
+    <script>
+      /**
+       * Toy Preact Implementation
+       * A lightweight alternative to React with a similar API
+       */
+      (function (global) {
+        // Create an object to hold all exports
+        const Preact = {};
+
+        // Keep track of rendered components
+        const components = new Map();
+
+        // Queue of components to be rendered
+        const renderQueue = [];
+        let renderTimer = null;
+
+        /**
+         * Process all queued component renders
+         */
+        function processRenderQueue() {
+          const queue = renderQueue.slice();
+          renderQueue.length = 0;
+          renderTimer = null;
+
+          queue.forEach((component) => {
+            if (component._dirty) {
+              renderComponent(component);
+            }
+          });
+        }
+
+        /**
+         * Global Preact options
+         */
+        const options = {
+          // Hook invoked on state updates
+          _enqueueRender: (component) => {
+            if (!component._dirty) return;
+
+            if (renderQueue.indexOf(component) === -1) {
+              renderQueue.push(component);
+            }
+
+            if (!renderTimer) {
+              renderTimer = setTimeout(processRenderQueue, 0);
+            }
+          },
+        };
+
+        /**
+         * Convert children to an array
+         */
+        function toChildArray(children) {
+          if (children == null) return [];
+
+          return Array.isArray(children) ? children.flat() : [children];
+        }
+
+        /**
+         * Creates a virtual DOM element
+         */
+        function createElement(type, props, ...children) {
+          props = props || {};
+          // Flatten and filter children
+          const normalizedChildren = children
+            .flat()
+            .filter((child) => child != null && child !== false);
+
+          // Handle children in props
+          props.children =
+            normalizedChildren.length === 1
+              ? normalizedChildren[0]
+              : normalizedChildren.length
+              ? normalizedChildren
+              : undefined;
+
+          return {
+            type,
+            props,
+            key: props.key || null,
+            ref: props.ref || null,
+            __isVNode: true,
+          };
+        }
+
+        // Fragment component
+        const Fragment = (props) => props.children;
+
+        // Create a ref object
+        function createRef() {
+          return { current: null };
+        }
+
+        // Check if an object is a valid element
+        function isValidElement(vnode) {
+          return vnode != null && vnode.__isVNode === true;
+        }
+
+        /**
+         * Base component class
+         */
+        class BaseComponent {
+          constructor(props) {
+            this.props = props || {};
+            this.state = {};
+            this.refs = {};
+            this._dirty = false;
+            this._pendingState = null;
+          }
+
+          setState(update, callback) {
+            // Create pending state if it doesn't exist
+            if (!this._pendingState) {
+              this._pendingState = { ...this.state };
+            }
+
+            // Apply update to pending state
+            if (typeof update === "function") {
+              Object.assign(
+                this._pendingState,
+                update(this._pendingState, this.props)
+              );
+            } else {
+              Object.assign(this._pendingState, update);
+            }
+
+            // Mark component as dirty and queue render
+            this._dirty = true;
+            options._enqueueRender(this);
+
+            if (callback) setTimeout(callback, 0);
+          }
+
+          forceUpdate(callback) {
+            this._dirty = true;
+            renderComponent(this);
+            if (callback) setTimeout(callback, 0);
+          }
+
+          render() {
+            return null;
+          }
+        }
+
+        /**
+         * Clone a VNode with new props
+         */
+        function cloneElement(vnode, props, ...children) {
+          props = { ...(vnode.props || {}), ...(props || {}) };
+
+          // If no new children provided, use original vnode's children
+          const childrenToUse =
+            children.length > 0 ? children : vnode.props.children;
+
+          return createElement(vnode.type, props, childrenToUse);
+        }
+
+        /**
+         * Create a Context object
+         */
+        function createContext(defaultValue) {
+          const context = {
+            _defaultValue: defaultValue,
+            Provider: null,
+            Consumer: null,
+          };
+
+          // Create Provider component
+          context.Provider = function Provider(props) {
+            this.value =
+              props.value !== undefined ? props.value : context._defaultValue;
+            return props.children;
+          };
+
+          // Create Consumer component
+          context.Consumer = function Consumer(props) {
+            const contextValue = this._getContextValue
+              ? this._getContextValue(context)
+              : context._defaultValue;
+
+            return props.children(contextValue);
+          };
+
+          return context;
+        }
+
+        /**
+         * Render a component, applying any pending state
+         */
+        function renderComponent(component) {
+          if (!component) return null;
+
+          // Initialize component data if not already stored
+          if (!components.has(component)) {
+            components.set(component, {
+              vnode: null,
+              dom: null,
+              component,
+            });
+          }
+
+          const data = components.get(component);
+
+          // Apply any pending state
+          if (component._pendingState) {
+            component.state = component._pendingState;
+            component._pendingState = null;
+          }
+
+          // Reset dirty flag
+          component._dirty = false;
+
+          // Render new DOM
+          const newVNode = component.render();
+          const newDom = renderToDom(newVNode);
+
+          // Update DOM in the document
+          if (data.dom && data.dom.parentNode) {
+            data.dom.parentNode.replaceChild(newDom, data.dom);
+          }
+
+          // Update component data
+          data.vnode = newVNode;
+          data.dom = newDom;
+
+          return newDom;
+        }
+
+        /**
+         * Convert vnode to DOM node
+         */
+        function renderToDom(vnode) {
+          // Handle null/undefined/boolean
+          if (vnode == null || typeof vnode === "boolean") {
+            return document.createTextNode("");
+          }
+
+          // Handle text nodes
+          if (typeof vnode === "string" || typeof vnode === "number") {
+            return document.createTextNode(vnode);
+          }
+
+          // Handle components
+          if (typeof vnode.type === "function") {
+            // Check if it's a class component
+            if (vnode.type.prototype instanceof BaseComponent) {
+              const component = new vnode.type(vnode.props);
+
+              // Store component data first (without the dom)
+              components.set(component, {
+                vnode,
+                dom: null,
+                component,
+              });
+
+              // Then render component
+              const dom = renderComponent(component);
+              return dom;
+            } else {
+              // Function component
+              const renderedVNode = vnode.type(vnode.props);
+              return renderToDom(renderedVNode);
+            }
+          }
+
+          // Handle regular DOM elements
+          const dom =
+            vnode.type === "svg"
+              ? document.createElementNS(
+                  "http://www.w3.org/2000/svg",
+                  vnode.type
+                )
+              : document.createElement(vnode.type);
+
+          // Set attributes
+          setAttributes(dom, vnode.props);
+
+          // Render children
+          const children = toChildArray(vnode.props.children);
+          children.forEach((child) => {
+            const childDom = renderToDom(child);
+            if (childDom) dom.appendChild(childDom);
+          });
+
+          // Store reference if needed
+          if (vnode.ref) {
+            if (typeof vnode.ref === "function") {
+              vnode.ref(dom);
+            } else {
+              vnode.ref.current = dom;
+            }
+          }
+
+          return dom;
+        }
+
+        /**
+         * Set DOM attributes from props
+         */
+        function setAttributes(dom, props) {
+          if (!props) return;
+
+          for (const name in props) {
+            if (name === "children" || name === "key" || name === "ref")
+              continue;
+
+            // Handle events
+            if (name.startsWith("on") && typeof props[name] === "function") {
+              const eventName = name.slice(2).toLowerCase();
+              // Store event listeners to allow cleanup
+              dom._listeners = dom._listeners || {};
+              if (dom._listeners[eventName]) {
+                dom.removeEventListener(eventName, dom._listeners[eventName]);
+              }
+              dom._listeners[eventName] = props[name];
+              dom.addEventListener(eventName, props[name]);
+              continue;
+            }
+
+            // Handle styles
+            if (name === "style" && typeof props[name] === "object") {
+              const styles = props[name];
+              for (const styleName in styles) {
+                dom.style[styleName] = styles[styleName];
+              }
+              continue;
+            }
+
+            // Handle className special case
+            if (name === "className") {
+              dom.setAttribute("class", props[name]);
+              continue;
+            }
+
+            // Handle everything else
+            if (name in dom && !(dom instanceof SVGElement)) {
+              dom[name] = props[name];
+            } else {
+              dom.setAttribute(name, props[name]);
+            }
+          }
+        }
+
+        /**
+         * Renders a vnode into a DOM element
+         */
+        function render(vnode, container, replaceNode) {
+          // Store reference to container
+          if (!container.__vnodeInstance) {
+            container.__vnodeInstance = {
+              _container: container,
+              _root: null,
+            };
+          }
+
+          const instance = container.__vnodeInstance;
+
+          // Convert to DOM node
+          const dom = renderToDom(vnode);
+
+          // Handle replacement
+          if (replaceNode) {
+            container.replaceChild(dom, replaceNode);
+          } else if (instance._root) {
+            container.replaceChild(dom, instance._root);
+          } else {
+            container.appendChild(dom);
+          }
+
+          instance._root = dom;
+
+          return dom;
+        }
+
+        /**
+         * Hydrate existing DOM with virtual DOM
+         */
+        function hydrate(vnode, container) {
+          // In a real implementation, this would match the virtual DOM
+          // with existing DOM nodes instead of creating new ones
+          return render(vnode, container);
+        }
+
+        // Expose the API
+        Preact.render = render;
+        Preact.hydrate = hydrate;
+        Preact.createElement = createElement;
+        Preact.h = createElement;
+        Preact.Fragment = Fragment;
+        Preact.createRef = createRef;
+        Preact.isValidElement = isValidElement;
+        Preact.Component = BaseComponent;
+        Preact.cloneElement = cloneElement;
+        Preact.createContext = createContext;
+        Preact.toChildArray = toChildArray;
+        Preact.options = options;
+
+        // Export to global scope or as a module
+        if (typeof module !== "undefined") {
+          module.exports = Preact;
+        } else {
+          global.Preact = Preact;
+        }
+      })(
+        typeof globalThis !== "undefined"
+          ? globalThis
+          : typeof window !== "undefined"
+          ? window
+          : this
+      );
+    </script>
+
+    <!-- Your application code -->
+    <script>
+      // Access Preact from the global scope
+      const { h, render, Component } = Preact;
+
+      // Function component
+      const Hello = ({ name }) => h("div", null, `Hello, ${name}!`);
+
+      // Class component with state
+      class Counter extends Component {
+        constructor(props) {
+          super(props);
+          this.state = { count: 0 };
+        }
+
+        increment = () => {
+          this.setState({ count: this.state.count + 1 });
+          console.log(this.state);
+        };
+
+        render() {
+          return h(
+            "div",
+            null,
+            h("h1", null, `Count: ${this.state.count}`),
+            h("button", { onClick: this.increment }, "Increment")
+          );
+        }
+      }
+
+      // Render components
+      render(
+        h("div", null, h(Hello, { name: "World" }), h(Counter, null)),
+        document.getElementById("app")
+      );
+    </script>
+  </body>
+</html>
