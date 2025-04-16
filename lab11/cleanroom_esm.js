@@ -221,8 +221,6 @@ const build = function(statics) {
   return current;
 };
 
-// P, a rethinking of Preact
-const P = (() => {
   const components = new Map();
   const renderQueue = [];
   let renderTimer = null;
@@ -340,33 +338,8 @@ const P = (() => {
     return componentStates[index];
   }
 
-  // function renderComponent(component) {
-  //   if (!component) return null;
-  //   if (!components.has(component)) {
-  //     components.set(component, { vnode: null, dom: null, component });
-  //   }
-    
-  //   const data = components.get(component);
-  //   if (component._pendingState) {
-  //     component.state = component._pendingState;
-  //     component._pendingState = null;
-  //   }
-    
-  //   component._dirty = false;
-  //   const newVNode = component.render();
-  //   const newDom = renderToDom(newVNode);
-    
-  //   if (data.dom && data.dom.parentNode) {
-  //     data.dom.parentNode.replaceChild(newDom, data.dom);
-  //   }
-    
-  //   data.vnode = newVNode;
-  //   data.dom = newDom;
-  //   return newDom;
-  // }
-
   // Functional component wrapper
-  FC = (fn) => {
+  const FC = (fn) => {
     return class extends BaseComponent {
       render() {
         currentComponent = this; // Set for hooks
@@ -511,20 +484,21 @@ const P = (() => {
 
   const hydrate = (vnode, container) => render(vnode, container);
 
-  return {
+
+// Export all the functions
+export {
     build,
     render,
     hydrate,
     createElement,
-    h: createElement,
+    createElement as h,
     Fragment,
     createRef,
     isValidElement,
-    Component: BaseComponent,
+    BaseComponent as Component,
     cloneElement,
     createContext,
     toChildArray,
 	useState,
 	FC
-  };
-})();
+};

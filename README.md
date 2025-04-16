@@ -1,4 +1,16 @@
-# CleanRoom JS
+
+
+# <img src="/Users/mvm/Desktop/LABEL CONCEPT/cleanroom/cleanroom_guy.svg" alt="cleanroom_guy " style="zoom:5%;" />   CLEANROOM.JS 
+
+`2025-04-15 10:55p `
+
+Refactored into an es module format. Increasing parity towards the `standalone` bundle. 
+
+Exploring replacing `esbuild` with `bun`.
+
+ 
+
+
 
 `2025-02-17  7:43a`
 
