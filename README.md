@@ -2,6 +2,10 @@
 
 # <img src="cleanroom_guy.svg" alt="cleanroom_guy " style="zoom:5%;" />   CLEANROOM.JS 
 
+`2025-07-03 11:13p` 
+
+Last mile help with `gemini-cli`. 
+
 `2025-04-15 10:55p `
 
 Refactored into an es module format. Increasing parity towards the `standalone` bundle. 

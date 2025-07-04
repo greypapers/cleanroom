@@ -1,4 +1,4 @@
-import { h, render, useSignal, htm, useEffect, useRef, useState, useReducer  } from "../lib/cleanroom.js";
+import { h, render, useSignal, htm, useEffect, useRef, useState, useReducer, FC  } from "./cleanroom.js";
 
 
 const html = htm.bind(h);
@@ -29,4 +29,4 @@ function Counter(props) {
   );
 }
 
-export default Counter;
+export default FC(Counter);

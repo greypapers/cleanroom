@@ -997,6 +997,6 @@ export {
     useSignal,
     useComputed,
     useSignalEffect,
+	useReducer,
 	useRef,
-	useReducer
 };
