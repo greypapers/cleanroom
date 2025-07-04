@@ -8,7 +8,9 @@ Refactored into an es module format. Increasing parity towards the `standalone` 
 
 Exploring replacing `esbuild` with `bun`.
 
- 
+Saw this on HN tonight:
+
+https://legacy.reactjs.org/blog/2016/09/28/our-first-50000-stars.html
 
 
 

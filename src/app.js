@@ -223,7 +223,7 @@ const BookContent = (props) => {
 }
 
 const SmartGrid = () => {
-  return html`<h1 class="title">SMARTGRID</h1><div class="grid">
+  return html`<h1 class="title">SMARTGRID</h1><div class="grid is-desktop">
   <div class="cell"><h2 class="subtitle">Cell 1</h2>
   
   </div>
