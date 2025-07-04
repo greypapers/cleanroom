@@ -1,5 +1,5 @@
 
-import { h, render, useSignal, useEffect, htm } from "../lib/standalone.js";
+import { h, render, useSignal, useEffect, htm } from "../lib/cleanroom.js";
 import D3Wrapper from './D3wrapper.js'
 import Counter  from "./Counter.js";
 import NOAAWidget from "./NOAAWidget.js"

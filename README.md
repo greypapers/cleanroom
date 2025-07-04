@@ -1,6 +1,6 @@
 
 
-# <img src="/Users/mvm/Desktop/LABEL CONCEPT/cleanroom/cleanroom_guy.svg" alt="cleanroom_guy " style="zoom:5%;" />   CLEANROOM.JS 
+# <img src="cleanroom_guy.svg" alt="cleanroom_guy " style="zoom:5%;" />   CLEANROOM.JS 
 
 `2025-04-15 10:55p `
 
