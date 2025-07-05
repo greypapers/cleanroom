@@ -6,6 +6,10 @@
 
 Last mile help with `gemini-cli`. 
 
+`12:53a`
+
+https://www.puruvj.dev/blog/deep-dive-into-preact-source-code
+
 `2025-04-15 10:55p `
 
 Refactored into an es module format. Increasing parity towards the `standalone` bundle. 
